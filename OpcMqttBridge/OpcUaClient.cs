@@ -1,4 +1,4 @@
-﻿using Opc.Ua;
+using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Configuration;
 
@@ -23,60 +23,60 @@ namespace OpcMqttBridge
             return new List<string>
             {
                 // Machine Identification
-                "ns=2;s=BeverageFillingLine.MachineName",
-                "ns=2;s=BeverageFillingLine.MachineSerialNumber",
-                "ns=2;s=BeverageFillingLine.Plant",
-                "ns=2;s=BeverageFillingLine.ProductionSegment",
-                "ns=2;s=BeverageFillingLine.ProductionLine",
-            
+                "ns=2;s=MachineName",
+                "ns=2;s=MachineSerialNumber",
+                "ns=2;s=Plant",
+                "ns=2;s=ProductionSegment",
+                "ns=2;s=ProductionLine",
+        
                 // Production Order
-                "ns=2;s=BeverageFillingLine.ProductionOrder",
-                "ns=2;s=BeverageFillingLine.Article",
-                "ns=2;s=BeverageFillingLine.Quantity",
-                "ns=2;s=BeverageFillingLine.CurrentLotNumber",
-                "ns=2;s=BeverageFillingLine.ExpirationDate",
-            
+                "ns=2;s=ProductionOrder",
+                "ns=2;s=Article",
+                "ns=2;s=Quantity",
+                "ns=2;s=CurrentLotNumber",
+                "ns=2;s=ExpirationDate",
+        
                 // Target Values
-                "ns=2;s=BeverageFillingLine.TargetFillVolume",
-                "ns=2;s=BeverageFillingLine.TargetLineSpeed",
-                "ns=2;s=BeverageFillingLine.TargetProductTemperature",
-                "ns=2;s=BeverageFillingLine.TargetCO2Pressure",
-                "ns=2;s=BeverageFillingLine.TargetCapTorque",
-                "ns=2;s=BeverageFillingLine.TargetCycleTime",
-            
+                "ns=2;s=TargetFillVolume",
+                "ns=2;s=TargetLineSpeed",
+                "ns=2;s=TargetProductTemperature",
+                "ns=2;s=TargetCO2Pressure",
+                "ns=2;s=TargetCapTorque",
+                "ns=2;s=TargetCycleTime",
+        
                 // Actual Values
-                "ns=2;s=BeverageFillingLine.ActualFillVolume",
-                "ns=2;s=BeverageFillingLine.ActualLineSpeed",
-                "ns=2;s=BeverageFillingLine.ActualProductTemperature",
-                "ns=2;s=BeverageFillingLine.ActualCO2Pressure",
-                "ns=2;s=BeverageFillingLine.ActualCapTorque",
-                "ns=2;s=BeverageFillingLine.ActualCycleTime",
-                "ns=2;s=BeverageFillingLine.FillAccuracyDeviation",
-            
+                "ns=2;s=ActualFillVolume",
+                "ns=2;s=ActualLineSpeed",
+                "ns=2;s=ActualProductTemperature",
+                "ns=2;s=ActualCO2Pressure",
+                "ns=2;s=ActualCapTorque",
+                "ns=2;s=ActualCycleTime",
+                "ns=2;s=FillAccuracyDeviation",
+        
                 // System Status
-                "ns=2;s=BeverageFillingLine.MachineStatus",
-                "ns=2;s=BeverageFillingLine.CurrentStation",
-                "ns=2;s=BeverageFillingLine.ProductLevelTank",
-                "ns=2;s=BeverageFillingLine.CleaningCycleStatus",
-                "ns=2;s=BeverageFillingLine.QualityCheckWeight",
-                "ns=2;s=BeverageFillingLine.QualityCheckLevel",
-            
+                "ns=2;s=MachineStatus",
+                "ns=2;s=CurrentStation",
+                "ns=2;s=ProductLevelTank",
+                "ns=2;s=CleaningCycleStatus",
+                "ns=2;s=QualityCheckWeight",
+                "ns=2;s=QualityCheckLevel",
+        
                 // Counters
-                "ns=2;s=BeverageFillingLine.GoodBottles",
-                "ns=2;s=BeverageFillingLine.BadBottlesVolume",
-                "ns=2;s=BeverageFillingLine.BadBottlesWeight",
-                "ns=2;s=BeverageFillingLine.BadBottlesCap",
-                "ns=2;s=BeverageFillingLine.BadBottlesOther",
-                "ns=2;s=BeverageFillingLine.TotalBadBottles",
-                "ns=2;s=BeverageFillingLine.TotalBottles",
-                "ns=2;s=BeverageFillingLine.GoodBottlesOrder",
-                "ns=2;s=BeverageFillingLine.BadBottlesOrder",
-                "ns=2;s=BeverageFillingLine.TotalBottlesOrder",
-                "ns=2;s=BeverageFillingLine.ProductionOrderProgress",
-            
+                "ns=2;s=GoodBottles",
+                "ns=2;s=BadBottlesVolume",
+                "ns=2;s=BadBottlesWeight",
+                "ns=2;s=BadBottlesCap",
+                "ns=2;s=BadBottlesOther",
+                "ns=2;s=TotalBadBottles",
+                "ns=2;s=TotalBottles",
+                "ns=2;s=GoodBottlesOrder",
+                "ns=2;s=BadBottlesOrder",
+                "ns=2;s=TotalBottlesOrder",
+                "ns=2;s=ProductionOrderProgress",
+        
                 // Alarms
-                "ns=2;s=BeverageFillingLine.ActiveAlarms",
-                "ns=2;s=BeverageFillingLine.AlarmCount"
+                "ns=2;s=ActiveAlarms",
+                "ns=2;s=AlarmCount"
             };
         }
 
@@ -85,17 +85,85 @@ namespace OpcMqttBridge
             var application = new ApplicationInstance
             {
                 ApplicationName = _applicationName,
-                ApplicationType = ApplicationType.Client,
-                ConfigSectionName = _applicationName
+                ApplicationType = ApplicationType.Client,                
             };
 
-            var config = await application.LoadApplicationConfiguration(false);
-            config.ApplicationUri = $"urn:{System.Net.Dns.GetHostName()}:{_applicationName}";
-            config.SecurityConfiguration.AutoAcceptUntrustedCertificates = true;
+            var config = new ApplicationConfiguration
+            {
+                ApplicationName = _applicationName,
+                ApplicationType = ApplicationType.Client,
+                ApplicationUri = $"urn:{System.Net.Dns.GetHostName()}:{_applicationName}",
+                ProductUri = $"uri:{_applicationName}",
 
-            await application.CheckApplicationInstanceCertificate(false, 0);
+                ServerConfiguration = new ServerConfiguration
+                {
+                    MaxSessionCount = 100,
+                    MaxSessionTimeout = 3600000,
+                    MinSessionTimeout = 10000,
+                },
 
-            var endpoint = CoreClientUtils.SelectEndpoint(_endpointUrl, false);
+                SecurityConfiguration = new SecurityConfiguration
+                {
+                    ApplicationCertificate = new CertificateIdentifier
+                    {
+                        StoreType = "Directory",
+                        StorePath = Path.Combine(Directory.GetCurrentDirectory(), "pki", "own")
+                    },
+                    TrustedPeerCertificates = new CertificateTrustList
+                    {
+                        StoreType = "Directory",
+                        StorePath = Path.Combine(Directory.GetCurrentDirectory(), "pki", "trusted")
+                    },
+                    TrustedIssuerCertificates = new CertificateTrustList
+                    {
+                        StoreType = "Directory",
+                        StorePath = Path.Combine(Directory.GetCurrentDirectory(), "pki", "issuer")
+                    },
+                    RejectedCertificateStore = new CertificateTrustList
+                    {
+                        StoreType = "Directory",
+                        StorePath = Path.Combine(Directory.GetCurrentDirectory(), "pki", "rejected")
+                    },
+                    AutoAcceptUntrustedCertificates = true,
+                    AddAppCertToTrustedStore = true,
+                    RejectSHA1SignedCertificates = false,
+                    MinimumCertificateKeySize = 1024,
+                },
+
+                TransportQuotas = new TransportQuotas
+                {
+                    OperationTimeout = 600000,
+                    MaxStringLength = 1048576,
+                    MaxByteStringLength = 1048576,
+                    MaxArrayLength = 65535,
+                    MaxMessageSize = 4194304,
+                    MaxBufferSize = 65535,
+                    ChannelLifetime = 300000,
+                    SecurityTokenLifetime = 3600000
+                },
+
+                ClientConfiguration = new ClientConfiguration
+                {
+                    DefaultSessionTimeout = 60000,
+                    MinSubscriptionLifetime = 10000,
+                },
+
+                TraceConfiguration = new TraceConfiguration
+                {
+                    OutputFilePath = "%CommonApplicationData%\\OPC Foundation\\Logs\\OpcUaClient.log",
+                    DeleteOnLoad = true,
+                    TraceMasks = 0
+                },
+
+                DisableHiResClock = false
+            };
+
+            // Validate the configuration
+            await config.Validate(ApplicationType.Client);
+
+            application.ApplicationConfiguration = config;
+
+            var endpoint = CoreClientUtils.SelectEndpoint(config, _endpointUrl, false);
             var endpointConfiguration = EndpointConfiguration.Create(config);
             var configuredEndpoint = new ConfiguredEndpoint(null, endpoint, endpointConfiguration);
 
@@ -110,7 +178,7 @@ namespace OpcMqttBridge
             );        
         }
 
-        public Task<Dictionary<string, object>> ReadAllVariablesAsync()
+        public async Task<Dictionary<string, object>> ReadAllVariablesAsync()
         {
             var result = new Dictionary<string, object>();
 
@@ -119,7 +187,10 @@ namespace OpcMqttBridge
                 try
                 {
                     var value = _session!.ReadValue(nodeId);
-                    var variableName = nodeId.Split('.').Last();
+                    var variableName = nodeId.Split('=').Last();
+
+                    Console.WriteLine($"Read {variableName}: {value.Value ?? "NULL"} (Status: {value.StatusCode})");
+
                     result[variableName] = value.Value ?? "null";
                 }
                 catch (Exception ex)
@@ -128,17 +199,24 @@ namespace OpcMqttBridge
                 }
             }
 
-            return result;
+            return await Task.FromResult(result);
         }
 
         public async Task DisconnectAsync()
         {
-            if (_session != null)
+            try
             {
-                _session.Close();
-                _session.Dispose();                
+                if (_session != null && _session.Connected)
+                {
+                    _session.Close();
+                    _session.Dispose();
+                    _session = null;
+                }
             }
-
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Disconnect error: {ex.Message}");
+            }
             await Task.CompletedTask;
         }
         

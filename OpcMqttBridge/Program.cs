@@ -1,4 +1,6 @@
-﻿namespace OpcMqttBridge
+using System.Text.Json;
+
+namespace OpcMqttBridge
 {
     class Program
     {
@@ -39,8 +41,17 @@
             finally
             {
                 _publishTimer?.Dispose();
-                await _mqttPublisher?.DisconnectAsync();
-                await _opcUaClient?.DisconnectAsync();
+                if (_mqttPublisher != null)
+                {
+                    await _mqttPublisher.DisconnectAsync();
+                }
+                if (_opcUaClient != null)
+                {
+                    await _opcUaClient.DisconnectAsync();
+                }
+
+                // Give time for cleanup
+                await Task.Delay(500);
             }
         }
 
@@ -81,7 +92,7 @@
                 cleaning_status = data.GetValueOrDefault("CleaningCycleStatus")
             };
 
-            await _mqttPublisher!.PublishAsync("beverage/filling-line/status", payload);
+            await _mqttPublisher!.PublishAsync("beverage/filling-line/status", JsonSerializer.Serialize(payload));
         }
 
         private static async Task PublishProductionData(Dictionary<string, object> data, DateTime timestamp)
@@ -109,7 +120,7 @@
                 }
             };
 
-            await _mqttPublisher!.PublishAsync("beverage/filling-line/production", payload);
+            await _mqttPublisher!.PublishAsync("beverage/filling-line/production", JsonSerializer.Serialize(payload));
         }
 
         private static async Task PublishProcessValues(Dictionary<string, object> data, DateTime timestamp)
@@ -151,7 +162,7 @@
                 tank_level_percent = data.GetValueOrDefault("ProductLevelTank")
             };
 
-            await _mqttPublisher!.PublishAsync("beverage/filling-line/process", payload);
+            await _mqttPublisher!.PublishAsync("beverage/filling-line/process", JsonSerializer.Serialize(payload));
         }
 
         private static async Task PublishQualityData(Dictionary<string, object> data, DateTime timestamp)
@@ -163,7 +174,7 @@
                 level_check = data.GetValueOrDefault("QualityCheckLevel"),
             };
 
-            await _mqttPublisher!.PublishAsync("beverage/filling-line/quality", payload);
+            await _mqttPublisher!.PublishAsync("beverage/filling-line/quality", JsonSerializer.Serialize(payload));
         }
 
         private static async Task PublishAlarms(Dictionary<string, object> data, DateTime timestamp)
@@ -178,7 +189,7 @@
                 active_alarms = activeAlarms
             };
 
-            await _mqttPublisher!.PublishAsync("beverage/filling-line/alarms", payload);
+            await _mqttPublisher!.PublishAsync("beverage/filling-line/alarms", JsonSerializer.Serialize(payload));
         }
     }
 }

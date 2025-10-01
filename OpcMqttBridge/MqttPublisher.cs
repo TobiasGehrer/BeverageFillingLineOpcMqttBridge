@@ -1,5 +1,4 @@
-﻿using MQTTnet;
-using System.Text.Json;
+using MQTTnet;
 
 namespace OpcMqttBridge
 {
@@ -9,6 +8,7 @@ namespace OpcMqttBridge
         private readonly int _port;
         private readonly string _clientId;
         private IMqttClient? _mqttClient;
+
         public MqttPublisher(string broker, int port, string clientId)
         {
             _broker = broker;
@@ -17,13 +17,12 @@ namespace OpcMqttBridge
         }
         public async Task ConnectAsync()
         {
-            var factory = new MqttFactory();
+            var factory = new MqttClientFactory();
             _mqttClient = factory.CreateMqttClient();
 
             var options = new MqttClientOptionsBuilder()
                 .WithTcpServer(_broker, _port)
-                .WithClientId(_clientId)                
-                .WithCleanSession()
+                .WithClientId(_clientId)                                
                 .Build();
 
             var response = await _mqttClient.ConnectAsync(options, CancellationToken.None);
@@ -35,18 +34,11 @@ namespace OpcMqttBridge
         }
 
         public async Task PublishAsync(string topic, string payload)
-        {
-            var jsonPayload = JsonSerializer.Serialize(payload, new JsonSerializerOptions
-            {
-                WriteIndented = false,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
-
+        {           
             var message = new MqttApplicationMessageBuilder()
                 .WithTopic(topic)
-                .WithPayload(jsonPayload)
-                .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
-                .WithRetainFlag(false)
+                .WithPayload(payload)
+                .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)                
                 .Build();
 
             await _mqttClient!.PublishAsync(message, CancellationToken.None);
