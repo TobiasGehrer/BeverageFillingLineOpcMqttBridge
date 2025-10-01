@@ -187,10 +187,7 @@ namespace OpcMqttBridge
                 try
                 {
                     var value = _session!.ReadValue(nodeId);
-                    var variableName = nodeId.Split('=').Last();
-
-                    Console.WriteLine($"Read {variableName}: {value.Value ?? "NULL"} (Status: {value.StatusCode})");
-
+                    var variableName = nodeId.Split('=').Last();                    
                     result[variableName] = value.Value ?? "null";
                 }
                 catch (Exception ex)
