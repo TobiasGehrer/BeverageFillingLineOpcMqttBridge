@@ -8,10 +8,17 @@ namespace OpcMqttBridge
         private static MqttPublisher? _mqttPublisher;
         private static Timer? _publishTimer;
 
+        // UNS Configuration - adjust these to match your organization
+        private const string Version = "v1";
+        private const string Enterprise = "best-beverage";
+        private const string Site = "dornbirn";
+        private const string Area = "production";
+        private const string Line = "filling-line-1";
+
         static async Task Main(string[] args)
         {
             Console.WriteLine("=== OPC UA to MQTT Bridge Agent ===");
-            Console.WriteLine("Connecting baverage filling lint to MQTT broker...\n");
+            Console.WriteLine("Connecting beverage filling line to MQTT broker...\n");
 
             try
             {
@@ -29,6 +36,7 @@ namespace OpcMqttBridge
                 _publishTimer = new Timer(async _ => await PublishAllDataAsync(), null, TimeSpan.Zero, TimeSpan.FromSeconds(3));
 
                 Console.WriteLine("Bridge active. Publishing every 3 seconds...");
+                Console.WriteLine($"UNS Base Topic: {Version}/{Enterprise}/{Site}/{Area}/{Line}");
                 Console.WriteLine("Press Ctrl+C to stop.\n");
 
                 // Keep running
@@ -64,14 +72,18 @@ namespace OpcMqttBridge
                 // Read all OPC UA variables
                 var machineData = await _opcUaClient!.ReadAllVariablesAsync();
 
-                // Publish to different MQTT topics
-                await PublishMachineStatus(machineData, timestamp);
-                await PublishProductionData(machineData, timestamp);
-                await PublishProcessValues(machineData, timestamp);
-                await PublishQualityData(machineData, timestamp);
-                await PublishAlarms(machineData, timestamp);
+                // Publish each variable individually following UNS structure
+                int publishCount = 0;
+                foreach (var mapping in GetTopicMappings())
+                {
+                    if (machineData.TryGetValue(mapping.OpcVariable, out var value))
+                    {
+                        await PublishMetric(mapping.Topic, value, timestamp);
+                        publishCount++;
+                    }
+                }
 
-                Console.WriteLine($"[{timestamp:HH:mm:ss}] Published all data to MQTT");
+                Console.WriteLine($"[{timestamp:HH:mm:ss}] Published {publishCount} metrics to MQTT");
             }
             catch (Exception ex)
             {
@@ -79,117 +91,87 @@ namespace OpcMqttBridge
             }
         }
 
-        private static async Task PublishMachineStatus(Dictionary<string, object> data, DateTime timestamp)
+        private static async Task PublishMetric(string topic, object value, DateTime timestamp)
         {
             var payload = new
             {
                 timestamp,
-                machine_name = data.GetValueOrDefault("MachineName"),
-                serial_number = data.GetValueOrDefault("MachineSerialNumber"),
-                plant = data.GetValueOrDefault("Plant"),
-                status = data.GetValueOrDefault("MachineStatus"),
-                current_station = data.GetValueOrDefault("CurrentStation"),
-                cleaning_status = data.GetValueOrDefault("CleaningCycleStatus")
+                value
             };
 
-            await _mqttPublisher!.PublishAsync("v1/beverage/filling-line/status", JsonSerializer.Serialize(payload));
+            var fullTopic = $"{Version}/{Enterprise}/{Site}/{Area}/{Line}/{topic}";
+            await _mqttPublisher!.PublishAsync(fullTopic, JsonSerializer.Serialize(payload));
         }
 
-        private static async Task PublishProductionData(Dictionary<string, object> data, DateTime timestamp)
+        private static List<TopicMapping> GetTopicMappings()
         {
-            var payload = new
+            return new List<TopicMapping>
             {
-                timestamp,
-                production_order = data.GetValueOrDefault("ProductionOrder"),
-                article = data.GetValueOrDefault("Article"),
-                quantity = data.GetValueOrDefault("Quantity"),
-                lot_number = data.GetValueOrDefault("CurrentLotNumber"),
-                expiration_date = data.GetValueOrDefault("ExpirationDate"),
-                progress_percent = data.GetValueOrDefault("ProductionOrderProgress"),
-                counters = new
-                {
-                    good_bottles = data.GetValueOrDefault("GoodBottles"),
-                    bad_bottles_total = data.GetValueOrDefault("TotalBadBottles"),
-                    bad_bottles_volume = data.GetValueOrDefault("BadBottlesVolume"),
-                    bad_bottles_weight = data.GetValueOrDefault("BadBottlesWeight"),
-                    bad_bottles_cap = data.GetValueOrDefault("BadBottlesCap"),
-                    bad_bottles_other = data.GetValueOrDefault("BadBottlesOther"),
-                    total_bottles = data.GetValueOrDefault("TotalBottles"),
-                    good_bottles_order = data.GetValueOrDefault("GoodBottlesOrder"),
-                    bad_bottles_order = data.GetValueOrDefault("BadBottlesOrder")
-                }
-            };
+                // Machine Information
+                new("machine_name", "MachineName"),
+                new("machine_serial_number", "MachineSerialNumber"),
+                new("machine_plant", "Plant"),
+                new("machine_status", "MachineStatus"),
+                new("machine_current_station", "CurrentStation"),
+                new("machine_cleaning_status", "CleaningCycleStatus"),
 
-            await _mqttPublisher!.PublishAsync("v1/beverage/filling-line/production", JsonSerializer.Serialize(payload));
+                // Production Order Information
+                new("production_order", "ProductionOrder"),
+                new("production_article", "Article"),
+                new("production_quantity", "Quantity"),
+                new("production_lot_number", "CurrentLotNumber"),
+                new("production_expiration_date", "ExpirationDate"),
+                new("production_progress_percent", "ProductionOrderProgress"),
+
+                // Production Counters
+                new("counters_good_bottles", "GoodBottles"),
+                new("counters_bad_bottles_total", "TotalBadBottles"),
+                new("counters_bad_bottles_volume", "BadBottlesVolume"),
+                new("counters_bad_bottles_weight", "BadBottlesWeight"),
+                new("counters_bad_bottles_cap", "BadBottlesCap"),
+                new("counters_bad_bottles_other", "BadBottlesOther"),
+                new("counters_total_bottles", "TotalBottles"),
+                new("counters_good_bottles_order", "GoodBottlesOrder"),
+                new("counters_bad_bottles_order", "BadBottlesOrder"),
+
+                // Process Values - Fill Volume
+                new("process_fill_volume_target", "TargetFillVolume"),
+                new("process_fill_volume_actual", "ActualFillVolume"),
+                new("process_fill_volume_deviation", "FillAccuracyDeviation"),
+
+                // Process Values - Line Speed
+                new("process_line_speed_target", "TargetLineSpeed"),
+                new("process_line_speed_actual", "ActualLineSpeed"),
+
+                // Process Values - Temperature
+                new("process_temperature_target", "TargetProductTemperature"),
+                new("process_temperature_actual", "ActualProductTemperature"),
+
+                // Process Values - CO2 Pressure
+                new("process_co2_pressure_target", "TargetCO2Pressure"),
+                new("process_co2_pressure_actual", "ActualCO2Pressure"),
+
+                // Process Values - Cap Torque
+                new("process_cap_torque_target", "TargetCapTorque"),
+                new("process_cap_torque_actual", "ActualCapTorque"),
+
+                // Process Values - Cycle Time
+                new("process_cycle_time_target", "TargetCycleTime"),
+                new("process_cycle_time_actual", "ActualCycleTime"),
+
+                // Process Values - Tank Level
+                new("process_tank_level_percent", "ProductLevelTank"),
+
+                // Quality Checks
+                new("quality_weight_check", "QualityCheckWeight"),
+                new("quality_level_check", "QualityCheckLevel"),
+
+                // Alarms
+                new("alarms_count", "AlarmCount"),
+                new("alarms_active", "ActiveAlarms")
+            };
         }
 
-        private static async Task PublishProcessValues(Dictionary<string, object> data, DateTime timestamp)
-        {
-            var payload = new
-            {
-                timestamp,
-                fill_volume = new
-                {
-                    target = data.GetValueOrDefault("TargetFillVolume"),
-                    actual = data.GetValueOrDefault("ActualFillVolume"),
-                    deviation = data.GetValueOrDefault("FillAccuracyDeviation")
-                },
-                line_speed = new
-                {
-                    target = data.GetValueOrDefault("TargetLineSpeed"),
-                    actual = data.GetValueOrDefault("ActualLineSpeed")
-                },
-                temperature = new
-                {
-                    target = data.GetValueOrDefault("TargetProductTemperature"),
-                    actual = data.GetValueOrDefault("ActualProductTemperature")
-                },
-                co2_pressure = new
-                {
-                    target = data.GetValueOrDefault("TargetCO2Pressure"),
-                    actual = data.GetValueOrDefault("ActualCO2Pressure")
-                },
-                cap_torque = new
-                {
-                    target = data.GetValueOrDefault("TargetCapTorque"),
-                    actual = data.GetValueOrDefault("ActualCapTorque")
-                },
-                cycle_time = new
-                {
-                    target = data.GetValueOrDefault("TargetCycleTime"),
-                    actual = data.GetValueOrDefault("ActualCycleTime")
-                },
-                tank_level_percent = data.GetValueOrDefault("ProductLevelTank")
-            };
-
-            await _mqttPublisher!.PublishAsync("v1/beverage/filling-line/process", JsonSerializer.Serialize(payload));
-        }
-
-        private static async Task PublishQualityData(Dictionary<string, object> data, DateTime timestamp)
-        {
-            var payload = new
-            {
-                timestamp,
-                weight_check = data.GetValueOrDefault("QualityCheckWeight"),
-                level_check = data.GetValueOrDefault("QualityCheckLevel"),
-            };
-
-            await _mqttPublisher!.PublishAsync("v1/beverage/filling-line/quality", JsonSerializer.Serialize(payload));
-        }
-
-        private static async Task PublishAlarms(Dictionary<string, object> data, DateTime timestamp)
-        {
-            var activeAlarms = data.GetValueOrDefault("ActiveAlarms") as string[] ?? Array.Empty<string>();
-
-
-            var payload = new
-            {
-                timestamp,
-                alarm_count = data.GetValueOrDefault("AlarmCount"),
-                active_alarms = activeAlarms
-            };
-
-            await _mqttPublisher!.PublishAsync("v1/beverage/filling-line/alarms", JsonSerializer.Serialize(payload));
-        }
+        private record TopicMapping(string Topic, string OpcVariable);
     }
 }
