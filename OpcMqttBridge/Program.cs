@@ -92,7 +92,7 @@ namespace OpcMqttBridge
                 cleaning_status = data.GetValueOrDefault("CleaningCycleStatus")
             };
 
-            await _mqttPublisher!.PublishAsync("beverage/filling-line/status", JsonSerializer.Serialize(payload));
+            await _mqttPublisher!.PublishAsync("v1/beverage/filling-line/status", JsonSerializer.Serialize(payload));
         }
 
         private static async Task PublishProductionData(Dictionary<string, object> data, DateTime timestamp)
@@ -120,7 +120,7 @@ namespace OpcMqttBridge
                 }
             };
 
-            await _mqttPublisher!.PublishAsync("beverage/filling-line/production", JsonSerializer.Serialize(payload));
+            await _mqttPublisher!.PublishAsync("v1/beverage/filling-line/production", JsonSerializer.Serialize(payload));
         }
 
         private static async Task PublishProcessValues(Dictionary<string, object> data, DateTime timestamp)
@@ -162,7 +162,7 @@ namespace OpcMqttBridge
                 tank_level_percent = data.GetValueOrDefault("ProductLevelTank")
             };
 
-            await _mqttPublisher!.PublishAsync("beverage/filling-line/process", JsonSerializer.Serialize(payload));
+            await _mqttPublisher!.PublishAsync("v1/beverage/filling-line/process", JsonSerializer.Serialize(payload));
         }
 
         private static async Task PublishQualityData(Dictionary<string, object> data, DateTime timestamp)
@@ -174,7 +174,7 @@ namespace OpcMqttBridge
                 level_check = data.GetValueOrDefault("QualityCheckLevel"),
             };
 
-            await _mqttPublisher!.PublishAsync("beverage/filling-line/quality", JsonSerializer.Serialize(payload));
+            await _mqttPublisher!.PublishAsync("v1/beverage/filling-line/quality", JsonSerializer.Serialize(payload));
         }
 
         private static async Task PublishAlarms(Dictionary<string, object> data, DateTime timestamp)
@@ -189,7 +189,7 @@ namespace OpcMqttBridge
                 active_alarms = activeAlarms
             };
 
-            await _mqttPublisher!.PublishAsync("beverage/filling-line/alarms", JsonSerializer.Serialize(payload));
+            await _mqttPublisher!.PublishAsync("v1/beverage/filling-line/alarms", JsonSerializer.Serialize(payload));
         }
     }
 }
