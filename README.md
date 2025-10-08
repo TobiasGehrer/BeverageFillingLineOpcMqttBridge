@@ -18,25 +18,25 @@ The bridge reads 42 variables from the OPC UA server and organizes them into 5 l
 
 The bridge groups variables by function:
 
-**1. Status Topic** (`beverage/filling-line/status`)
+**1. Status Topic** (`v1/beverage/filling-line/status`)
 - Machine identification: name, serial number, plant
 - Current state: status, station, cleaning cycle
 
-**2. Production Topic** (`beverage/filling-line/production`)
+**2. Production Topic** (`v1/beverage/filling-line/production`)
 - Order info: production order, article, quantity, lot number
 - Counters: good bottles, bad bottles, progress percentage
 
-**3. Process Topic** (`beverage/filling-line/process`)
+**3. Process Topic** (`v1/beverage/filling-line/process`)
 - All process values with target vs actual:
   - Fill volume, line speed, temperature
   - CO2 pressure, cap torque, cycle time
 - Tank level percentage
 
-**4. Quality Topic** (`beverage/filling-line/quality`)
+**4. Quality Topic** (`v1/beverage/filling-line/quality`)
 - Weight check result (Pass/Fail)
 - Level check result (Pass/Fail)
 
-**5. Alarms Topic** (`beverage/filling-line/alarms`)
+**5. Alarms Topic** (`v1/beverage/filling-line/alarms`)
 - Alarm count
 - Array of active alarm messages
 
